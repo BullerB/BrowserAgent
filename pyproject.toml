@@ -21,6 +21,9 @@ dependencies = [
     "python-dotenv>=1.0",
 ]
 
+[project.scripts]
+webflow = "webflow.cli:main"
+
 [project.optional-dependencies]
 openai = ["openai>=1.54"]
 anthropic = ["anthropic>=0.39"]

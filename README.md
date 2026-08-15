@@ -15,8 +15,8 @@ core engine is domain-agnostic.
 
 ## Status
 
-Early MVP. Python library only - no CLI, REST API or UI yet; the layering leaves room
-for them.
+Early MVP. A small CLI wraps the library (`webflow --help`); no REST API or UI
+yet, but the layering leaves room for them.
 
 What is actually verified so far:
 
@@ -62,29 +62,31 @@ flow but cannot explore a new website.
 
 ## Run it
 
-The project does not yet have a command-line interface. Run the public Python
-API from the activated virtual environment:
+Installing the project (`pip install -e .`) registers a `webflow` command in
+the virtual environment.
 
 ```powershell
-py -c "import asyncio, webflow; batch = asyncio.run(webflow.gather(['forsikringsguiden/bilforsikring'])); print(batch.summary())"
+webflow providers                                        # list providers/goals
+webflow preflight forsikringsguiden/bilforsikring        # sanity-check config
+webflow gather forsikringsguiden/bilforsikring           # run a target
+webflow pending                                          # see paused runs
+webflow answer RUN_ID --field annual_km=15000            # resume with an answer
 ```
 
-The first run opens the real website and may pause for a human checkpoint. To
-see pending questions:
-
-```powershell
-py -c "import asyncio, webflow; [print(question.describe()) for question in asyncio.run(webflow.pending())]"
-```
-
-Resume a paused run by replacing the ID and field value below:
-
-```powershell
-py -c "import asyncio, webflow; outcome = asyncio.run(webflow.answer('RUN_ID', {'annual_km': '15000'})); print(outcome)"
-```
+The first run opens the real website and may pause for a human checkpoint;
+`webflow gather` prints a summary including any runs now `awaiting_human`. Use
+`webflow pending` to see what they need and `webflow answer` to resume once
+you've decided. Pass `--headed` to `gather`/`answer` to watch the browser
+instead of running headless, and `--no-probe-llm` to `preflight` to skip the
+live (paid) model call.
 
 Available targets are `forsikringsguiden/bilforsikring`,
 `forsikringsguiden/indboforsikring`, `forsikringsguiden/husforsikring`, and
 `forsikringsguiden/ulykkesforsikring`.
+
+The same three verbs are also available as a Python API for programmatic use
+(see [Usage](#usage) below) - the CLI is a thin wrapper around `webflow.gather`,
+`webflow.pending` and `webflow.answer`.
 
 ## Usage
 
@@ -187,6 +189,7 @@ automatic - there is no list to register in. Optional `prepare()` and
 | `src/webflow/extraction/` | Turn a results page into structured records. |
 | `src/webflow/persistence/` | SQLite run history. |
 | `src/webflow/orchestrator/` | End-to-end runner and concurrent scheduler. |
+| `src/webflow/cli.py` | The `webflow` command-line entry point. |
 | `src/providers/` | Site plugins. `insurance/forsikringsguiden` is the reference one. |
 | `profiles/` | Your personal data, used to fill forms. `profile.json` is gitignored. |
 | `data/` | Runtime state: `runs.db`, screenshots, traces. Gitignored. |
