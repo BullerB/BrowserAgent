@@ -1,0 +1,54 @@
+{
+  "products": [
+    "bilforsikring",
+    "husforsikring",
+    "indboforsikring",
+    "ulykkesforsikring"
+  ],
+  "person": {
+    "postal_code": "2300",
+    "birth_date": "1996-11-05",
+    "address": "Isafjordsgade 6, 2. th, 2300",
+    "email": "anders@example.com",
+    "phone": "12345678"
+  },
+  "bilforsikring": {
+    "registration_number": "DV78376",
+    "annual_km": "15000",
+    "deductible": "5000",
+    "insured_years": "5"
+  },
+  "husforsikring": {
+    "address": "Mosegård Park 47, 3500 Værløse",
+    "home_type": "Hus",
+    "living_area": "75",
+    "construction_year": "1970",
+    "year_of_purchase": "2005"
+  },
+  "indboforsikring": {
+    "home_type": "Lejlighed",
+    "living_area": "75",
+    "residents": "2",
+    "ownership": "ejer"
+  },
+  "ulykkesforsikring": {
+    "coverage": "standard",
+    "children": "0",
+    "employment": "Kontor"
+  },
+  "fritidshusforsikring": {
+    "address": "Skagenvej 12",
+    "seasonal_home": "ja",
+    "living_area": "90"
+  },
+  "rejseforsikring": {
+    "destination": "Spanien",
+    "trip_duration_days": "7",
+    "travelers": "2"
+  },
+  "hundeforsikring": {
+    "dog_breed": "Labrador",
+    "dog_age": "2",
+    "dog_weight_kg": "30"
+  }
+}

@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="da">
+<head><meta charset="utf-8"><title>Test formular</title></head>
+<body>
+  <h1>Bilforsikring</h1>
+
+  <button id="cookie-accept" data-testid="accept-cookies">ACCEPTER ALLE COOKIES</button>
+
+  <form id="quote-form">
+    <fieldset>
+      <legend>Om dig</legend>
+      <label for="email">E-mail</label>
+      <input id="email" name="email" type="email" placeholder="din@mail.dk" required>
+
+      <label for="age">Alder</label>
+      <input id="age" name="customerAge" type="number">
+
+      <label for="address">Adresse</label>
+      <input id="address" name="autoInput" type="text" autocomplete="off" placeholder="Vej og nr.">
+      <ul id="suggestions" role="listbox" hidden>
+        <li role="option">Isafjordsgade 6, 2300 K&oslash;benhavn S</li>
+        <li role="option">Isafjordsgade 60, 2300 K&oslash;benhavn S</li>
+      </ul>
+    </fieldset>
+
+    <fieldset>
+      <legend>Din bil</legend>
+      <label for="brand">M&aelig;rke</label>
+      <select id="brand" name="brand">
+        <option value="">V&aelig;lg</option>
+        <option value="vw">Volkswagen</option>
+        <option value="audi">Audi</option>
+      </select>
+
+      <label><input type="checkbox" id="terms" name="terms"> Jeg accepterer vilk&aring;rene</label>
+    </fieldset>
+
+    <button type="submit" id="submit">Videre</button>
+  </form>
+
+  <p id="error" class="error" hidden>Adresse skal udfyldes</p>
+  <div id="result" hidden>
+    <div class="quote"><div class="company">Alm. Brand</div><div class="price">3.499 kr / &aring;r</div></div>
+    <div class="quote"><div class="company">Tryg</div><div class="price">4.120 kr / &aring;r</div></div>
+  </div>
+
+  <script>
+    const address = document.getElementById('suggestions');
+    document.getElementById('address').addEventListener('input', (e) => {
+      address.hidden = e.target.value.length < 3;
+    });
+    address.addEventListener('click', (e) => {
+      if (e.target.matches('[role=option]')) {
+        document.getElementById('address').value = e.target.textContent;
+        address.hidden = true;
+      }
+    });
+    document.getElementById('cookie-accept').addEventListener('click', function () {
+      this.hidden = true;
+    });
+    document.getElementById('quote-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const addr = document.getElementById('address').value;
+      if (!addr) {
+        document.getElementById('error').hidden = false;
+        return;
+      }
+      document.getElementById('quote-form').hidden = true;
+      document.getElementById('result').hidden = false;
+    });
+  </script>
+</body>
+</html>

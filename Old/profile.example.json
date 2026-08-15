@@ -1,0 +1,24 @@
+{
+  "_comment": "State your requirements once here. Copy this file to profile.json and fill in real values (profile.json is gitignored).",
+
+  "products": ["bilforsikring", "indboforsikring"],
+
+  "person": {
+    "postnummer": "2100",
+    "fodselsdato": "1990-01-01",
+    "email": "dig@example.com",
+    "telefon": "12345678"
+  },
+
+  "bilforsikring": {
+    "registreringsnummer": "AB12345",
+    "km_per_aar": "15000",
+    "selvrisiko": "5000"
+  },
+
+  "indboforsikring": {
+    "boligtype": "Lejlighed",
+    "boligareal": "75",
+    "antal_beboere": "2"
+  }
+}

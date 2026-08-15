@@ -1,0 +1,32 @@
+{
+  "person": {
+    "first_name": "Anna",
+    "last_name": "Jensen",
+    "birth_date": "1990-01-01",
+    "email": "dig@example.com",
+    "phone": "12345678",
+    "address": "Eksempelvej 1, 2100 København Ø",
+    "postal_code": "2100",
+    "city": "København Ø",
+    "country": "DK"
+  },
+  "vehicle": {
+    "registration_number": "AB12345",
+    "brand": "Volkswagen",
+    "model": "Golf",
+    "first_registration_year": "2018",
+    "annual_km": "15000",
+    "insured_years": "5",
+    "claims_last_3_years": "0",
+    "deductible": "5000"
+  },
+  "home": {
+    "address": "Eksempelvej 1, 2100 København Ø",
+    "home_type": "Lejlighed",
+    "ownership": "ejer",
+    "living_area": "75",
+    "construction_year": "1970",
+    "residents": "2"
+  },
+  "extra": {}
+}

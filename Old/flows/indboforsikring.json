@@ -1,0 +1,60 @@
+{
+  "product": "indboforsikring",
+  "steps": [
+    {
+      "action": "goto",
+      "url": "https://forsikringsguiden.dk/indboforsikring"
+    },
+    {
+      "action": "click",
+      "selector": "div:nth-of-type(1) > div > div > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > button:nth-of-type(3)",
+      "text": "ACCEPTER ALLE COOKIES"
+    },
+    {
+      "action": "fill_and_pick",
+      "selector": "input[name=\"autoInput\"]",
+      "profile_key": "person.address",
+      "value": "Isafjordsgade 6, 2. th, 2300 København S"
+    },
+    {
+      "action": "fill",
+      "selector": "#customerAge",
+      "value": "29"
+    },
+    {
+      "action": "fill",
+      "selector": "#rankingAge",
+      "value": "29"
+    },
+    {
+      "action": "click",
+      "selector": "app-root > app-product-layout > div > div:nth-of-type(2) > app-common > div > form > section > div > div:nth-of-type(2) > fieldset > div > div:nth-of-type(3) > div:nth-of-type(1) > div > div:nth-of-type(1) > div > label:nth-of-type(1)",
+      "text": "0"
+    },
+    {
+      "action": "click",
+      "selector": "app-root > app-product-layout > div > div:nth-of-type(2) > app-common > div > form > section > div > div:nth-of-type(2) > fieldset > div > div:nth-of-type(3) > div:nth-of-type(2) > div > div:nth-of-type(1) > div > label:nth-of-type(2)",
+      "text": "2"
+    },
+    {
+      "action": "click",
+      "selector": "app-root > app-product-layout > div > div:nth-of-type(2) > app-common > app-navigate-flow > section > div > div > div:nth-of-type(2) > button",
+      "text": "Videre"
+    },
+    {
+      "action": "click",
+      "selector": "app-root > app-product-layout > div > div:nth-of-type(2) > app-furnishing > div > form > section > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div:nth-of-type(1) > div > div > label:nth-of-type(2)",
+      "text": "Nej"
+    },
+    {
+      "action": "click",
+      "selector": "app-root > app-product-layout > div > div:nth-of-type(2) > app-furnishing > div > form > section > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div:nth-of-type(2) > div > div > label:nth-of-type(1)",
+      "text": "0"
+    },
+    {
+      "action": "click",
+      "selector": "app-root > app-product-layout > div > div:nth-of-type(2) > app-furnishing > app-navigate-flow > section > div > app-product-navigate > div > div:nth-of-type(2) > button",
+      "text": "Videre"
+    }
+  ]
+}

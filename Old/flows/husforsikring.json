@@ -1,0 +1,40 @@
+{
+  "product": "husforsikring",
+  "steps": [
+    {
+      "action": "goto",
+      "url": "https://forsikringsguiden.dk/husforsikring"
+    },
+    {
+      "action": "click",
+      "selector": "div:nth-of-type(1) > div > div > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(1) > button:nth-of-type(3)",
+      "text": "ACCEPTER ALLE COOKIES"
+    },
+    {
+      "action": "fill_and_pick",
+      "selector": "input[name=\"autoInput\"]",
+      "profile_key": "husforsikring.address",
+      "value": "Moseg\u00e5rd Park 47, 3500 V\u00e6rl\u00f8se"
+    },
+    {
+      "action": "fill",
+      "selector": "#customerAge",
+      "value": "29"
+    },
+    {
+      "action": "fill",
+      "selector": "#rankingAge",
+      "value": "29"
+    },
+    {
+      "action": "click",
+      "selector": "app-root > app-product-layout > div > div:nth-of-type(2) > app-common > app-navigate-flow > section > div > div > div:nth-of-type(2) > button",
+      "text": "Videre"
+    },
+    {
+      "action": "click",
+      "selector": "app-root > app-product-layout > div > div:nth-of-type(2) > app-house > app-navigate-flow > section > div > app-product-navigate > div > div:nth-of-type(2) > button",
+      "text": "Videre"
+    }
+  ]
+}

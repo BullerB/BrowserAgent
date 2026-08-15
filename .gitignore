@@ -1,0 +1,19 @@
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Runtime state: run database, screenshots, traces, locally-learned flows
+data/
+
+# Personal data
+.env
+profiles/profile.json
+profiles/*.local.json
