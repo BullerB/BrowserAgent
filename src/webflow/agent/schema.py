@@ -101,6 +101,17 @@ class PlannerDecision(BaseModel):
         return self
 
 
+class DemonstrationReview(BaseModel):
+    """The planner's verdict on a human take-over, so it can be folded into the flow."""
+
+    """Indexes (into the demonstrated action list) worth keeping in the learned flow."""
+    keep_indexes: list[int] = Field(default_factory=list)
+    """Why these actions were kept or dropped."""
+    reasoning: str = ""
+    """One line to store alongside the flow, e.g. 'human picked a different bank'."""
+    flow_note: str = ""
+
+
 def _value_source(planned: PlannedAction) -> ValueSource:
     if not any((planned.profile_key, planned.answer_key, planned.literal_value)):
         raise AgentError(f"{planned.kind!r} needs profile_key, answer_key or literal_value")

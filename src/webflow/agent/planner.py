@@ -5,12 +5,12 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from webflow.agent import prompts
-from webflow.agent.schema import PlannedAction, PlannerDecision, to_action
+from webflow.agent.schema import DemonstrationReview, PlannedAction, PlannerDecision, to_action
 from webflow.config import AgentSettings
 from webflow.domain.actions import Action
 from webflow.domain.observation import PageObservation
 from webflow.domain.values import ProfileKeyInfo
-from webflow.llm.base import LLMClient
+from webflow.llm.base import LLMClient, NullLLMClient
 from webflow.logging import get_logger
 
 log = get_logger(__name__)
@@ -84,6 +84,32 @@ class Planner:
         )
         log.info("repair_decision", step=step_index, kind=decision.action.kind)
         return to_action(decision.action, observation)
+
+    async def review_demonstration(
+        self,
+        context: PlannerContext,
+        observation_before: PageObservation,
+        actions: list[Action],
+        *,
+        reason: str = "human took over",
+    ) -> DemonstrationReview:
+        """Ask which actions of a human take-over are worth keeping in the flow."""
+        if isinstance(self._llm, NullLLMClient) or not actions:
+            return DemonstrationReview(
+                keep_indexes=list(range(len(actions))),
+                flow_note=f"human demonstration: {reason}",
+            )
+        user = prompts.build_demonstration_prompt(
+            goal=context.goal,
+            reason=reason,
+            observation_before=observation_before,
+            actions=[f"{a.type} {getattr(a, 'target', '') or ''}".strip() for a in actions],
+        )
+        review = await self._llm.generate_structured(
+            prompts.DEMONSTRATION_SYSTEM_PROMPT, user, DemonstrationReview
+        )
+        log.info("demonstration_reviewed", kept=len(review.keep_indexes), of=len(actions))
+        return review
 
 
 __all__ = ["PlannedAction", "Planner", "PlannerContext", "PlannerDecision"]

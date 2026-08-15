@@ -52,6 +52,15 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Show the browser window instead of running headless.",
     )
+    p_gather.add_argument(
+        "--interactive",
+        action="store_true",
+        help=(
+            "Open a visible browser and let you take over on errors or questions "
+            "instead of suspending the run; your actions are logged and reviewed "
+            "by the planner to update the learned flow. Implies --headed."
+        ),
+    )
 
     p_pending = sub.add_parser("pending", help="List runs currently waiting for a human.")
     p_pending.add_argument("--provider", default=None, help="Filter by provider id.")
@@ -78,6 +87,14 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Show the browser window instead of running headless.",
     )
+    p_answer.add_argument(
+        "--interactive",
+        action="store_true",
+        help=(
+            "Resume with a visible browser and take over on further errors or "
+            "questions instead of suspending again. Implies --headed."
+        ),
+    )
 
     return parser
 
@@ -102,8 +119,8 @@ async def _run_providers() -> int:
     return 0
 
 
-async def _run_gather(targets: list[str], *, headed: bool) -> int:
-    batch = await webflow.gather(targets, headless=not headed)
+async def _run_gather(targets: list[str], *, headed: bool, interactive: bool) -> int:
+    batch = await webflow.gather(targets, headless=not headed, interactive=interactive)
     print(batch.summary())
     return 1 if batch.error_count else 0
 
@@ -125,6 +142,7 @@ async def _run_answer(
     abort: bool,
     resume: bool,
     headed: bool,
+    interactive: bool,
 ) -> int:
     values: dict[str, str] = dict(fields)
     outcome = await webflow.answer(
@@ -133,6 +151,7 @@ async def _run_answer(
         aborted=abort,
         resume=resume,
         headless=not headed,
+        interactive=interactive,
     )
     print(outcome)
     return 0
@@ -148,7 +167,7 @@ def main(argv: list[str] | None = None) -> int:
     elif args.command == "providers":
         coro = _run_providers()
     elif args.command == "gather":
-        coro = _run_gather(args.targets, headed=args.headed)
+        coro = _run_gather(args.targets, headed=args.headed, interactive=args.interactive)
     elif args.command == "pending":
         coro = _run_pending(args.provider)
     elif args.command == "answer":
@@ -158,6 +177,7 @@ def main(argv: list[str] | None = None) -> int:
             abort=args.abort,
             resume=not args.no_resume,
             headed=args.headed,
+            interactive=args.interactive,
         )
     else:  # pragma: no cover - argparse enforces valid subcommands
         parser.error(f"Unknown command {args.command!r}")

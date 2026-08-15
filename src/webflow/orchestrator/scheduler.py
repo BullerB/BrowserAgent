@@ -81,6 +81,7 @@ async def run_goals(
     profile: Profile | None = None,
     headless: bool | None = None,
     max_concurrency: int | None = None,
+    interactive: bool = False,
 ) -> BatchResult:
     """Fan out across providers; partial success is the expected case."""
     limit = max_concurrency or services.settings.max_concurrent_providers
@@ -97,6 +98,7 @@ async def run_goals(
                     services,
                     profile=profile,
                     headless=headless,
+                    interactive=interactive,
                 )
                 return await runner.start()
             except Exception as exc:
@@ -123,6 +125,7 @@ async def resume_run(
     *,
     profile: Profile | None = None,
     headless: bool | None = None,
+    interactive: bool = False,
 ) -> RunOutcome:
     """Continue a run whose checkpoint has been answered."""
     run = await services.runs.get(run_id)
@@ -134,5 +137,6 @@ async def resume_run(
         services,
         profile=profile,
         headless=headless,
+        interactive=interactive,
     )
     return await runner.resume(run_id)

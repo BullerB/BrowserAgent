@@ -123,3 +123,35 @@ def build_repair_prompt(
             "CURRENT PAGE:\n" + observation.to_prompt(),
         ]
     )
+
+
+DEMONSTRATION_SYSTEM_PROMPT = """\
+A human just took over a browser automation run in interactive mode - either to
+fix an error or to answer something the agent could not - and performed one or
+more actions directly in the browser. Each demonstrated action was already
+captured as a real click or fill against a specific element.
+
+Decide which of these actions are worth keeping as part of the learned flow
+(some may be redundant, accidental, or specific to this one run only) and write
+one short note describing what the human did, for the flow's history.
+
+Answer with JSON only.\
+"""
+
+
+def build_demonstration_prompt(
+    *,
+    goal: str,
+    reason: str,
+    observation_before: PageObservation,
+    actions: list[str],
+) -> str:
+    numbered = "\n".join(f"[{i}] {a}" for i, a in enumerate(actions))
+    return "\n\n".join(
+        [
+            f"GOAL: {goal}",
+            f"WHY THE HUMAN TOOK OVER: {reason}",
+            "PAGE WHEN THE HUMAN TOOK OVER:\n" + observation_before.to_prompt(),
+            "ACTIONS THE HUMAN DEMONSTRATED:\n" + (numbered or "(none)"),
+        ]
+    )

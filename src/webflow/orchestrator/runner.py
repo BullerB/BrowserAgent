@@ -23,6 +23,7 @@ from webflow.agent.policies import RunPolicy
 from webflow.browser import locators
 from webflow.browser.artifacts import capture_screenshot
 from webflow.browser.executor import ActionExecutor
+from webflow.browser.interactive import InteractiveRecorder
 from webflow.browser.observer import observe_stable
 from webflow.browser.session import BrowserSession
 from webflow.domain.actions import (
@@ -91,6 +92,7 @@ class GoalRunner:
         secrets: dict[str, str] | None = None,
         headless: bool | None = None,
         use_cached_flow: bool = True,
+        interactive: bool = False,
     ) -> None:
         self.provider = provider
         self.goal: Goal = provider.goal(goal_name)
@@ -99,6 +101,10 @@ class GoalRunner:
         self.secrets = secrets or {}
         self.headless = headless
         self.use_cached_flow = use_cached_flow
+        """Keep a visible browser open and let a human take over on errors or
+        checkpoints instead of suspending the run; their actions are reviewed
+        by the planner and folded into the learned flow."""
+        self.interactive = interactive
 
         self.store: FlowStore = make_flow_store(provider.flows_dir, services.settings)
         self.guards = Guards.for_site(provider.base_url, provider.extra_allowed_domains)
@@ -160,18 +166,19 @@ class GoalRunner:
     # ------------------------------------------------------------- lifecycle
 
     async def _open_browser(self, run: RunState, *, resuming: bool) -> None:
+        headless = False if self.interactive else self.headless
         if resuming and run.trajectory:
             session, result = await rehydrate(
                 run,
                 self._values(run),
                 browser_settings=self.services.settings.browser,
-                headless=self.headless,
+                headless=headless,
             )
             self._session = session
             self._warnings.extend(result.warnings)
         else:
             self._session = BrowserSession(
-                self.services.settings.browser, headless=self.headless
+                self.services.settings.browser, headless=headless
             )
             await self._session.start()
             await self._session.page.goto(self.goal.start_url)
@@ -336,6 +343,8 @@ class GoalRunner:
         try:
             outcome = await self._executor.execute(action)
         except (ActionExecutionError, LocatorResolutionError) as exc:
+            if self.interactive and await self._handle_takeover(run, f"{action.type} failed: {exc}"):
+                return
             run.record(
                 ExecutedStep(
                     index=len(run.trajectory),
@@ -405,6 +414,13 @@ class GoalRunner:
             self._note(f"reused a stored answer for: {request.question[:60]}")
             return
 
+        if self.interactive and self._session is not None:
+            self._record_checkpoint(run, request)
+            handled = await self._handle_takeover(run, f"needs a human: {request.question}")
+            if handled:
+                run.resolved_checkpoints.append(request.fingerprint)
+                return
+
         if self._session is not None:
             request.screenshot_path = await capture_screenshot(
                 self._session.page, run.id, f"checkpoint_{request.reason.value}"
@@ -432,6 +448,64 @@ class GoalRunner:
     def _refresh_values(self, run: RunState) -> None:
         if self._executor is not None:
             self._executor.values = self._values(run)
+
+    # ---------------------------------------------------------- interactive
+
+    async def _handle_takeover(self, run: RunState, reason: str) -> bool:
+        """Pause and let a human act directly in the visible browser.
+
+        Captures whatever they do, has the planner decide what is worth
+        keeping, folds the kept actions into the run's trajectory, and
+        returns ``True`` so the caller can carry on instead of failing or
+        suspending the run.
+        """
+        if not self.interactive or self._session is None:
+            return False
+
+        log.info("interactive_takeover", run_id=run.id, reason=reason)
+        self._note(f"paused for you to take over: {reason}")
+
+        recorder = InteractiveRecorder(self._session.page)
+        await recorder.start(
+            f"Interactive mode - {reason}. Do what's needed in the browser, "
+            "then click 'Resume automation'."
+        )
+        await recorder.wait_for_resume()
+        raw_events = await recorder.stop()
+        demonstrated = recorder.to_actions()
+
+        run.last_url = self._session.page.url
+        if not demonstrated:
+            self._note("resumed without recording any new actions")
+            return True
+
+        observation = await observe_stable(
+            self._session.page, settle_ms=self.services.settings.agent.settle_ms
+        )
+        review = await self.planner.review_demonstration(
+            self._planner_context(run), observation, demonstrated, reason=reason
+        )
+        keep = set(review.keep_indexes) if review.keep_indexes else set(range(len(demonstrated)))
+        kept = [a for i, a in enumerate(demonstrated) if i in keep]
+
+        for action in kept:
+            run.record(
+                ExecutedStep(
+                    index=len(run.trajectory),
+                    action=action,
+                    status=StepStatus.OK,
+                    mode=RunMode.AGENT,
+                    url_after=run.last_url,
+                )
+            )
+        if review.flow_note:
+            self._warnings.append(review.flow_note)
+        self._note(
+            f"learned {len(kept)} action(s) from your demonstration "
+            f"({len(raw_events)} raw events captured)"
+        )
+        self._refresh_values(run)
+        return True
 
     # -------------------------------------------------------------- results
 

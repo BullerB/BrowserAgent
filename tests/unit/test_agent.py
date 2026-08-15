@@ -192,3 +192,77 @@ def test_ask_human_carries_page_context() -> None:
     assert isinstance(action, HumanCheckpointAction)
     assert action.request.url == "https://x.dk"
     assert action.request.page_excerpt == "hello"
+
+
+# ----------------------------------------------------------- interactive mode
+
+
+async def test_review_demonstration_without_llm_keeps_everything() -> None:
+    from webflow.llm.base import NullLLMClient
+
+    planner = Planner(NullLLMClient())
+    observation = _observation()
+    actions = [
+        ClickAction(
+            target=SelectorSet(candidates=[Selector(kind=SelectorKind.CSS, value="#go")])
+        )
+    ]
+
+    review = await planner.review_demonstration(
+        PlannerContext(goal="bilforsikring", goal_description="", provider_name="X"),
+        observation,
+        actions,
+        reason="action failed",
+    )
+
+    assert review.keep_indexes == [0]
+    assert "action failed" in review.flow_note
+
+
+async def test_review_demonstration_uses_llm_when_configured() -> None:
+    reply = json.dumps({"keep_indexes": [1], "reasoning": "first click was a misclick", "flow_note": "picked a different option"})
+    llm = ScriptedLLMClient([reply])
+    planner = Planner(llm)
+    observation = _observation()
+    target = SelectorSet(candidates=[Selector(kind=SelectorKind.CSS, value="#go")])
+    actions = [ClickAction(target=target), ClickAction(target=target)]
+
+    review = await planner.review_demonstration(
+        PlannerContext(goal="bilforsikring", goal_description="", provider_name="X"),
+        observation,
+        actions,
+        reason="checkpoint",
+    )
+
+    assert review.keep_indexes == [1]
+    assert review.flow_note == "picked a different option"
+    assert len(llm.prompts) == 1
+
+
+def test_interactive_recorder_converts_click_and_fill_events() -> None:
+    from webflow.browser.interactive import InteractiveRecorder
+
+    recorder = InteractiveRecorder.__new__(InteractiveRecorder)  # skip Page dependency
+    recorder.events = [
+        {"kind": "click", "element": {"css": "button.submit", "tag": "button", "text": "Continue"}},
+        {
+            "kind": "change",
+            "element": {"id": "km", "css": "#km", "tag": "input"},
+            "value": "15000",
+            "sensitive": False,
+        },
+        {
+            "kind": "change",
+            "element": {"id": "pw", "css": "#pw", "tag": "input"},
+            "value": None,
+            "sensitive": True,
+        },
+        {"kind": "click", "element": {}},
+    ]
+
+    actions = recorder.to_actions()
+
+    assert len(actions) == 2
+    assert isinstance(actions[0], ClickAction)
+    assert actions[0].target.candidates[0].value == "button.submit"
+    assert actions[1].value.literal == "15000"

@@ -33,11 +33,13 @@ async def gather(
     services: Services | None = None,
     profile: Profile | None = None,
     headless: bool | None = None,
+    interactive: bool = False,
 ) -> BatchResult:
     """Run several ``provider/goal`` targets concurrently.
 
     Targets that need a human come back in ``result.awaiting_human`` rather than
-    blocking the others.
+    blocking the others - unless ``interactive`` is set, in which case a visible
+    browser is opened and you can take over directly instead of it suspending.
     """
     owned = services is None
     services = services or Services.create()
@@ -48,6 +50,7 @@ async def gather(
             services,
             profile=profile,
             headless=headless,
+            interactive=interactive,
         )
     finally:
         if owned:
@@ -77,6 +80,7 @@ async def answer(
     aborted: bool = False,
     resume: bool = True,
     headless: bool | None = None,
+    interactive: bool = False,
 ) -> RunOutcome:
     """Answer the question blocking a run and, by default, continue it.
 
@@ -95,7 +99,9 @@ async def answer(
         )
         if aborted or not resume:
             return RunOutcome(run=run)
-        return await resume_run(run_id, services, profile=profile, headless=headless)
+        return await resume_run(
+            run_id, services, profile=profile, headless=headless, interactive=interactive
+        )
     finally:
         if owned:
             await services.aclose()
