@@ -49,6 +49,22 @@ def test_reasons_that_need_a_live_browser_are_flagged() -> None:
     assert not CheckpointReason.MISSING_PROFILE_DATA.needs_live_browser
 
 
+def test_dotted_checkpoint_key_is_inferred_as_a_profile_update() -> None:
+    request = CheckpointRequest(
+        reason=CheckpointReason.MISSING_PROFILE_DATA,
+        question="What is your address?",
+        fields=[AnswerField(key="person.address", prompt="Address")],
+    )
+    answer = HumanAnswer(
+        checkpoint_id=request.id,
+        values={"person.address": "Example Street 1"},
+    )
+
+    assert AnswerBank.profile_updates(request, answer) == {
+        "person.address": "Example Street 1"
+    }
+
+
 async def test_answer_bank_reuses_a_previous_answer(settings: Settings) -> None:
     db = Database(settings)
     bank = AnswerBank(AnswerRepository(db))
@@ -64,6 +80,32 @@ async def test_answer_bank_reuses_a_previous_answer(settings: Settings) -> None:
     auto = await bank.try_answer(_request())
     assert auto is not None
     assert auto.values == {"annual_km": "15000"}
+    await db.dispose()
+
+
+async def test_rejected_answer_is_forgotten_and_requested_again(settings: Settings) -> None:
+    db = Database(settings)
+    repository = AnswerRepository(db)
+    queue = InterventionQueue(
+        RunRepository(db), CheckpointRepository(db), repository
+    )
+    request = _request()
+    answer = HumanAnswer(checkpoint_id=request.id, values={"annual_km": "15000"})
+    await queue.bank.remember("forsikringsguiden", request, answer)
+    run = RunState(
+        provider_id="forsikringsguiden",
+        goal="bilforsikring",
+        answers={"annual_km": "15000"},
+        resolved_checkpoints=[request.fingerprint],
+    )
+
+    corrected = await queue.invalidate_rejected_answer(run, _request())
+
+    assert run.answers == {}
+    assert request.fingerprint not in run.resolved_checkpoints
+    assert await repository.lookup(request.fingerprint) == {}
+    assert corrected.metadata["rejected_answer"] is True
+    assert "previous answer did not work" in corrected.question
     await db.dispose()
 
 

@@ -38,6 +38,7 @@ EXTRACTION_REPLY = json.dumps(
 
 #: Turns 1-3: accept cookies, fill the e-mail, then discover we have no age.
 EXPLORE_UNTIL_CHECKPOINT = [
+    decide(kind="fill_and_pick", element_index=0),
     decide(kind="click", element_index=0, summary="accept cookies"),
     decide(kind="fill", element_index=0, profile_key="person.email"),
     decide(

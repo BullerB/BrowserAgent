@@ -13,6 +13,8 @@ from webflow.persistence.repository import AnswerRepository
 
 log = get_logger(__name__)
 
+_PROFILE_ROOTS = frozenset({"person", "vehicle", "home", "extra"})
+
 
 class AnswerBank:
     def __init__(self, repository: AnswerRepository) -> None:
@@ -56,11 +58,18 @@ class AnswerBank:
     @staticmethod
     def profile_updates(request: CheckpointRequest, answer: HumanAnswer) -> dict[str, str]:
         """Answers that belong in the profile file rather than just the bank."""
-        return {
-            field.profile_key: answer.values[field.key]
-            for field in request.fields
-            if field.profile_key and field.reusable and field.key in answer.values
-        }
+        updates: dict[str, str] = {}
+        for field in request.fields:
+            if not field.reusable or field.key not in answer.values:
+                continue
+            profile_key = field.profile_key
+            if profile_key is None and "." in field.key:
+                root, _, _ = field.key.partition(".")
+                if root in _PROFILE_ROOTS:
+                    profile_key = field.key
+            if profile_key is not None:
+                updates[profile_key] = answer.values[field.key]
+        return updates
 
     async def forget(self, request: CheckpointRequest) -> None:
         await self._repository.forget(request.fingerprint)

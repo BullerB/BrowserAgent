@@ -83,6 +83,27 @@ class InterventionQueue:
                 )
         return items
 
+    async def invalidate_rejected_answer(
+        self, run: RunState, request: CheckpointRequest
+    ) -> CheckpointRequest:
+        """Forget an answer when the page asks the same question again."""
+        fingerprint = request.fingerprint
+        await self._bank.forget(request)
+        run.resolved_checkpoints = [
+            resolved for resolved in run.resolved_checkpoints if resolved != fingerprint
+        ]
+        for field in request.fields:
+            run.answers.pop(field.key, None)
+        return request.model_copy(
+            update={
+                "question": (
+                    f"{request.question.rstrip()} The previous answer did not work; "
+                    "please provide a corrected value."
+                ),
+                "metadata": {**request.metadata, "rejected_answer": True},
+            }
+        )
+
     async def answer(
         self,
         run_id: str,

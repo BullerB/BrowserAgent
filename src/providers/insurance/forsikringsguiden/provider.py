@@ -91,7 +91,7 @@ class ForsikringsguidenProvider(ProviderPlugin):
 
     async def prepare(self, page: Page) -> None:
         """Dismiss the cookie wall before the planner spends a turn on it."""
-        button = page.get_by_role("button", name=ACCEPT_COOKIES_RE)
+        button = page.locator("button").filter(has_text=ACCEPT_COOKIES_RE)
         try:
             await button.first.wait_for(state="visible", timeout=COOKIE_WAIT_MS)
             await button.first.click(timeout=5_000)

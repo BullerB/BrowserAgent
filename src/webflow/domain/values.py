@@ -72,6 +72,9 @@ class ValueSource(BaseModel):
             value = lookup_dotted(context.profile, self.profile_key)
             if value is not None:
                 return str(value)
+            answer = context.answers.get(self.profile_key)
+            if answer is not None:
+                return answer
         if self.literal is not None:
             return self.literal
         missing = self.profile_key or self.answer_key or "?"

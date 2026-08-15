@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+import json
+
 import pytest
+from pydantic import ValidationError
 
 from webflow.agent.guards import Guards, detect_captcha, registrable_domain
+from webflow.agent.planner import Planner, PlannerContext
 from webflow.agent.policies import RunPolicy
-from webflow.agent.schema import PlannedAction, to_action
+from webflow.agent.schema import PlannedAction, PlannerDecision, to_action
 from webflow.config import AgentSettings
-from webflow.domain.actions import ClickAction, GotoAction, HumanCheckpointAction
+from webflow.domain.actions import ClickAction, FillAndPickAction, GotoAction, HumanCheckpointAction
 from webflow.domain.checkpoint import CheckpointReason
 from webflow.domain.errors import (
     AgentError,
@@ -16,6 +20,7 @@ from webflow.domain.errors import (
 )
 from webflow.domain.observation import InteractiveElement, PageObservation
 from webflow.domain.selectors import Selector, SelectorKind, SelectorSet
+from webflow.llm.base import ScriptedLLMClient
 
 
 def _observation(*elements: InteractiveElement) -> PageObservation:
@@ -125,6 +130,53 @@ def test_fill_without_a_value_is_rejected() -> None:
     )
     with pytest.raises(AgentError):
         to_action(PlannedAction(kind="fill", element_index=0), observation)
+
+
+def test_planner_decision_rejects_fill_and_pick_without_a_value() -> None:
+    with pytest.raises(ValidationError, match="needs profile_key, answer_key or literal_value"):
+        PlannerDecision(action=PlannedAction(kind="fill_and_pick", element_index=5))
+
+
+def test_planner_decision_rejects_click_without_an_element() -> None:
+    with pytest.raises(ValidationError, match="requires element_index"):
+        PlannerDecision(action=PlannedAction(kind="click"))
+
+
+async def test_planner_retries_fill_and_pick_without_a_value() -> None:
+    observation = _observation(
+        InteractiveElement(index=5, tag="input", role="textbox", name="Adresse")
+    )
+    malformed = {
+        "page_summary": "Address is required",
+        "reasoning": "Use the address autocomplete",
+        "action": {"kind": "fill_and_pick", "element_index": 5},
+    }
+    corrected = {
+        **malformed,
+        "action": {
+            "kind": "fill_and_pick",
+            "element_index": 5,
+            "profile_key": "person.address",
+        },
+    }
+    llm = ScriptedLLMClient([json.dumps(malformed), json.dumps(corrected)])
+    planner = Planner(llm)
+
+    action, decision = await planner.next_action(
+        observation,
+        PlannerContext(
+            goal="bilforsikring",
+            goal_description="Get car insurance quotes",
+            provider_name="Forsikringsguiden",
+        ),
+        [],
+    )
+
+    assert isinstance(action, FillAndPickAction)
+    assert action.value.profile_key == "person.address"
+    assert decision.action.profile_key == "person.address"
+    assert len(llm.prompts) == 2
+    assert "needs profile_key, answer_key or literal_value" in llm.prompts[1][1]
 
 
 def test_ask_human_carries_page_context() -> None:

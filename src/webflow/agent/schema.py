@@ -9,9 +9,9 @@ selectors or personal data.
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, Self
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from webflow.domain.actions import (
     Action,
@@ -86,6 +86,19 @@ class PlannerDecision(BaseModel):
     """Why this action moves the goal forward."""
     reasoning: str = ""
     action: PlannedAction
+
+    @model_validator(mode="after")
+    def _action_has_required_fields(self) -> Self:
+        action = self.action
+        if action.kind in _NEEDS_ELEMENT and action.element_index is None:
+            raise ValueError(f"{action.kind!r} requires element_index")
+        if action.kind in _NEEDS_VALUE and not any(
+            (action.profile_key, action.answer_key, action.literal_value)
+        ):
+            raise ValueError(
+                f"{action.kind!r} needs profile_key, answer_key or literal_value"
+            )
+        return self
 
 
 def _value_source(planned: PlannedAction) -> ValueSource:

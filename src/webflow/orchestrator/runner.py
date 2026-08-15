@@ -293,7 +293,7 @@ class GoalRunner:
             action = self.guards.check(action, observation)
 
             if isinstance(action, HumanCheckpointAction):
-                await self._checkpoint(run, action.request)
+                await self._checkpoint(run, action.request, reopen_resolved=True)
                 self._note(f"asked the user: {action.request.question[:80]}")
                 continue
 
@@ -377,15 +377,24 @@ class GoalRunner:
 
     # ------------------------------------------------------------ checkpoints
 
-    async def _checkpoint(self, run: RunState, request: CheckpointRequest) -> None:
+    async def _checkpoint(
+        self,
+        run: RunState,
+        request: CheckpointRequest,
+        *,
+        reopen_resolved: bool = False,
+    ) -> None:
         """Satisfy a checkpoint from history, or suspend the run.
 
         Raising :class:`HumanInterventionRequired` unwinds all the way out of
         the loop so the browser can be closed before we start waiting.
         """
         if request.fingerprint in run.resolved_checkpoints:
-            log.debug("checkpoint_already_resolved", question=request.question[:60])
-            return
+            if not reopen_resolved:
+                log.debug("checkpoint_already_resolved", question=request.question[:60])
+                return
+            request = await self.services.queue.invalidate_rejected_answer(run, request)
+            log.info("checkpoint_answer_rejected", question=request.question[:80])
 
         auto = await self.services.queue.bank.try_answer(request)
         if auto is not None:

@@ -45,6 +45,11 @@ def test_value_source_prefers_secret_then_answer_then_profile() -> None:
         "fallback"
     )
 
+def test_profile_key_falls_back_to_an_equivalent_checkpoint_answer() -> None:
+    context = ValueContext(answers={"person.address": "Example Street 1"})
+
+    assert ValueSource(profile_key="person.address").resolve(context) == "Example Street 1"
+
 
 def test_value_source_requires_a_source() -> None:
     with pytest.raises(ValueError):

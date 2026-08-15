@@ -23,10 +23,16 @@ RULES
    is deliberately hidden from you; `preview` shows "***" for personal data.
    Use `literal_value` only for page-specific choices that are not personal data
    (for example picking "Volkswagen" in a car-brand dropdown).
+    Every `fill`, `fill_and_pick` and `select` action MUST include one of
+    `profile_key`, `answer_key` or `literal_value`; never return an empty value
+    action. For address autocomplete, use `fill_and_pick` with `person.address`
+    when that key is available.
 3. If a required field has no suitable profile key and no safe default, use
    `ask_human` with reason `missing_profile_data` and one entry in `fields`
-   describing exactly what you need. Do not invent personal data. Never guess a
-   name, address, e-mail, phone number, birth date or registration number.
+    describing exactly what you need. Set the field's `profile_key` to its dotted
+    profile path and use that same path as `key` when the answer is reusable.
+    Do not invent personal data. Never guess a name, address, e-mail, phone
+    number, birth date or registration number.
 4. Use `ask_human` with reason `captcha`, `mfa` or `login` the moment you see one
    - you cannot solve those. Use `consent` or `approval` before anything that
    costs money, sends an application or is otherwise irreversible.
