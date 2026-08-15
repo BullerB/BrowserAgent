@@ -13,6 +13,10 @@ calls**.
 Insurance quote comparison (forsikringsguiden.dk) is the first provider pack, but the
 core engine is domain-agnostic.
 
+See [ARCHITECTURE.md](ARCHITECTURE.md) for a full breakdown of how the pieces
+fit together (component diagram, main loop, data model). This README is the
+quick-start; that file is the one to update when the design changes.
+
 ## Status
 
 Early MVP. A small CLI wraps the library (`webflow --help`); no REST API or UI
@@ -79,6 +83,16 @@ The first run opens the real website and may pause for a human checkpoint;
 you've decided. Pass `--headed` to `gather`/`answer` to watch the browser
 instead of running headless, and `--no-probe-llm` to `preflight` to skip the
 live (paid) model call.
+
+Pass `--interactive` instead to watch *and* take over: the browser stays
+visible, and whenever the agent would hit an error or need a human, control is
+handed to you directly in the browser instead of pausing the run. Click
+"Resume automation" when you're done - whatever you did is captured, reviewed
+by the planner, and folded into the learned flow.
+
+```powershell
+webflow gather forsikringsguiden/bilforsikring --interactive
+```
 
 Available targets are `forsikringsguiden/bilforsikring`,
 `forsikringsguiden/indboforsikring`, `forsikringsguiden/husforsikring`, and
@@ -181,7 +195,7 @@ automatic - there is no list to register in. Optional `prepare()` and
 | Path | Purpose |
 | --- | --- |
 | `src/webflow/domain/` | Pure models: actions, selectors, flows, runs, observations. No I/O. |
-| `src/webflow/browser/` | Async Playwright session, page observation, resilient locators, the one action executor. |
+| `src/webflow/browser/` | Async Playwright session, page observation, resilient locators, the one action executor, interactive take-over. |
 | `src/webflow/llm/` | Provider-agnostic LLM client abstraction. |
 | `src/webflow/agent/` | The exploration loop: planner, stop policies, safety guards. |
 | `src/webflow/human/` | Checkpoints, the pending-intervention queue, resume, answer bank. |
@@ -193,6 +207,9 @@ automatic - there is no list to register in. Optional `prepare()` and
 | `src/providers/` | Site plugins. `insurance/forsikringsguiden` is the reference one. |
 | `profiles/` | Your personal data, used to fill forms. `profile.json` is gitignored. |
 | `data/` | Runtime state: `runs.db`, screenshots, traces. Gitignored. |
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for how these pieces call into each
+other and the full component diagram.
 
 ## Development
 
